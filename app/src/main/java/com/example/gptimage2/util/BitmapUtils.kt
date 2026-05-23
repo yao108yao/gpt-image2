@@ -3,6 +3,8 @@ package com.example.gptimage2.util
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -40,9 +42,14 @@ object BitmapUtils {
     ) {
         val canvas = Canvas(mask)
         val paint = Paint().apply {
-            color = if (isPaint) android.graphics.Color.WHITE else android.graphics.Color.TRANSPARENT
             style = Paint.Style.FILL
             isAntiAlias = true
+            if (isPaint) {
+                color = android.graphics.Color.WHITE
+            } else {
+                color = android.graphics.Color.TRANSPARENT
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+            }
         }
         canvas.drawCircle(x, y, radius, paint)
     }
@@ -58,11 +65,16 @@ object BitmapUtils {
     ) {
         val canvas = Canvas(mask)
         val paint = Paint().apply {
-            color = if (isPaint) android.graphics.Color.WHITE else android.graphics.Color.TRANSPARENT
             style = Paint.Style.STROKE
             this.strokeWidth = strokeWidth
             isAntiAlias = true
             strokeCap = Paint.Cap.ROUND
+            if (isPaint) {
+                color = android.graphics.Color.WHITE
+            } else {
+                color = android.graphics.Color.TRANSPARENT
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+            }
         }
         canvas.drawLine(startX, startY, endX, endY, paint)
     }

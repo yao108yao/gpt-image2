@@ -74,8 +74,7 @@ fun MaskEditorScreen(
                     isPaintMode = state.drawMode == DrawMode.PAINT,
                     onDraw = viewModel::onDraw,
                     onDrawLine = viewModel::onDrawLine,
-                    modifier = Modifier.fillMaxSize(),
-                    fillBounds = true
+                    modifier = Modifier.fillMaxSize()
                 )
 
                 // Bottom toolbar overlay

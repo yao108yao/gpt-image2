@@ -2,7 +2,10 @@ package com.example.gptimage2.ui.screens.mask
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,8 +25,7 @@ fun MaskCanvas(
     isPaintMode: Boolean,
     onDraw: (imageX: Float, imageY: Float) -> Unit,
     onDrawLine: (startX: Float, startY: Float, endX: Float, endY: Float) -> Unit,
-    modifier: Modifier = Modifier,
-    fillBounds: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     if (sourceBitmap == null) return
 
@@ -42,37 +44,39 @@ fun MaskCanvas(
     ) {
         Canvas(
             modifier = Modifier
-                .then(if (fillBounds) Modifier.fillMaxSize() else Modifier.aspectRatio(imageAspect))
+                .aspectRatio(imageAspect)
+                .fillMaxSize()
                 .align(Alignment.Center)
                 .pointerInput(sourceBitmap, maskBitmap, brushSize, isPaintMode) {
                     val imageWidth = sourceBitmap.width.toFloat()
                     val imageHeight = sourceBitmap.height.toFloat()
 
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            val mapped = mapCanvasToImage(offset, size, imageWidth, imageHeight)
-                            onDraw(mapped.x, mapped.y)
-                            lastDrawPoint = mapped
-                            pointerPosition = offset
-                        },
-                        onDrag = { change, _ ->
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val mapped = mapCanvasToImage(down.position, size, imageWidth, imageHeight)
+                        onDraw(mapped.x, mapped.y)
+                        lastDrawPoint = mapped
+                        pointerPosition = down.position
+
+                        val slop = awaitTouchSlopOrCancellation(down.id) { change, _ ->
                             change.consume()
-                            val mapped = mapCanvasToImage(change.position, size, imageWidth, imageHeight)
-                            lastDrawPoint?.let { last ->
-                                onDrawLine(last.x, last.y, mapped.x, mapped.y)
-                            }
-                            lastDrawPoint = mapped
-                            pointerPosition = change.position
-                        },
-                        onDragEnd = {
-                            lastDrawPoint = null
-                            pointerPosition = null
-                        },
-                        onDragCancel = {
-                            lastDrawPoint = null
-                            pointerPosition = null
                         }
-                    )
+
+                        if (slop != null) {
+                            drag(down.id) { change ->
+                                change.consume()
+                                val mappedDrag = mapCanvasToImage(change.position, size, imageWidth, imageHeight)
+                                lastDrawPoint?.let { last ->
+                                    onDrawLine(last.x, last.y, mappedDrag.x, mappedDrag.y)
+                                }
+                                lastDrawPoint = mappedDrag
+                                pointerPosition = change.position
+                            }
+                        }
+
+                        lastDrawPoint = null
+                        pointerPosition = null
+                    }
                 }
         ) {
             val w = size.width.toInt()
