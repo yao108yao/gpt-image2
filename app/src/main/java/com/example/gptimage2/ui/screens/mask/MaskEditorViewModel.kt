@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
-import com.example.gptimage2.domain.model.ImageSize
 import com.example.gptimage2.domain.model.ApiProvider
 import com.example.gptimage2.util.ApiErrorParser
 import com.example.gptimage2.util.BitmapUtils
@@ -162,11 +161,11 @@ class MaskEditorViewModel : ViewModel() {
                 BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
 
                 val sourceBitmap = _state.value.sourceBitmap!!
-                val autoSize = ImageSize.fromBitmap(sourceBitmap)
+                val sourceSize = "${sourceBitmap.width}x${sourceBitmap.height}"
 
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
-                    size = autoSize.apiValue,
+                    size = sourceSize,
                     imageFiles = listOf(sourceFile),
                     maskFile = actualMaskFile
                 )
