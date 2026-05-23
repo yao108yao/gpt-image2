@@ -224,11 +224,6 @@ fun MaskEditorScreen(
                         maxLines = 2
                     )
 
-                    SizeSelector(
-                        selectedSize = state.selectedSize,
-                        onSizeSelected = viewModel::onSizeSelected
-                    )
-
                     ProviderSelector(
                         providers = state.providers,
                         selectedIndex = state.selectedProviderIndex,

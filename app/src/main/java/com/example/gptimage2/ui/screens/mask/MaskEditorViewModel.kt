@@ -28,7 +28,6 @@ data class MaskEditorUiState(
     val brushSize: Int = 30,
     val drawMode: DrawMode = DrawMode.PAINT,
     val prompt: String = "",
-    val selectedSize: ImageSize = ImageSize.WIDE_1792,
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
     val error: String? = null,
@@ -142,10 +141,6 @@ class MaskEditorViewModel : ViewModel() {
         _state.value = _state.value.copy(prompt = prompt)
     }
 
-    fun onSizeSelected(size: ImageSize) {
-        _state.value = _state.value.copy(selectedSize = size)
-    }
-
     fun generateInpainting() {
         val sourceFile = _state.value.sourceFile ?: return
         val maskBitmap = _state.value.maskBitmap ?: return
@@ -166,9 +161,12 @@ class MaskEditorViewModel : ViewModel() {
                 val invertedMask = BitmapUtils.invertMaskForApi(maskBitmap)
                 BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
 
+                val sourceBitmap = _state.value.sourceBitmap!!
+                val autoSize = ImageSize.fromBitmap(sourceBitmap)
+
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
-                    size = _state.value.selectedSize.apiValue,
+                    size = autoSize.apiValue,
                     imageFiles = listOf(sourceFile),
                     maskFile = actualMaskFile
                 )
