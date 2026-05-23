@@ -22,7 +22,8 @@ fun MaskCanvas(
     isPaintMode: Boolean,
     onDraw: (imageX: Float, imageY: Float) -> Unit,
     onDrawLine: (startX: Float, startY: Float, endX: Float, endY: Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fillBounds: Boolean = false
 ) {
     if (sourceBitmap == null) return
 
@@ -41,7 +42,7 @@ fun MaskCanvas(
     ) {
         Canvas(
             modifier = Modifier
-                .aspectRatio(imageAspect)
+                .then(if (fillBounds) Modifier.fillMaxSize() else Modifier.aspectRatio(imageAspect))
                 .align(Alignment.Center)
                 .pointerInput(sourceBitmap, maskBitmap, brushSize, isPaintMode) {
                     val imageWidth = sourceBitmap.width.toFloat()
@@ -113,15 +114,17 @@ private fun mapCanvasToImage(
 }
 
 private fun createMaskOverlay(mask: Bitmap): Bitmap {
-    val overlay = Bitmap.createBitmap(mask.width, mask.height, Bitmap.Config.ARGB_8888)
+    val w = mask.width
+    val h = mask.height
+    val overlay = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    val srcPixels = IntArray(w * h)
+    val dstPixels = IntArray(w * h)
+    mask.getPixels(srcPixels, 0, w, 0, 0, w, h)
     val overlayColor = android.graphics.Color.argb(100, 255, 80, 80)
     val white = android.graphics.Color.WHITE
-    for (x in 0 until mask.width) {
-        for (y in 0 until mask.height) {
-            if (mask.getPixel(x, y) == white) {
-                overlay.setPixel(x, y, overlayColor)
-            }
-        }
+    for (i in srcPixels.indices) {
+        dstPixels[i] = if (srcPixels[i] == white) overlayColor else 0
     }
+    overlay.setPixels(dstPixels, 0, w, 0, 0, w, h)
     return overlay
 }

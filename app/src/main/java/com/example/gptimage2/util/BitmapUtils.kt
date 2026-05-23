@@ -68,15 +68,34 @@ object BitmapUtils {
     }
 
     fun createMaskOverlay(mask: Bitmap): Bitmap {
-        val overlay = Bitmap.createBitmap(mask.width, mask.height, Bitmap.Config.ARGB_8888)
+        val w = mask.width
+        val h = mask.height
+        val overlay = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val srcPixels = IntArray(w * h)
+        val dstPixels = IntArray(w * h)
+        mask.getPixels(srcPixels, 0, w, 0, 0, w, h)
         val overlayColor = android.graphics.Color.argb(100, 255, 80, 80)
-        for (x in 0 until mask.width) {
-            for (y in 0 until mask.height) {
-                if (mask.getPixel(x, y) == android.graphics.Color.WHITE) {
-                    overlay.setPixel(x, y, overlayColor)
-                }
-            }
+        val white = android.graphics.Color.WHITE
+        for (i in srcPixels.indices) {
+            dstPixels[i] = if (srcPixels[i] == white) overlayColor else 0
         }
+        overlay.setPixels(dstPixels, 0, w, 0, 0, w, h)
         return overlay
+    }
+
+    fun invertMaskForApi(mask: Bitmap): Bitmap {
+        val w = mask.width
+        val h = mask.height
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val srcPixels = IntArray(w * h)
+        val dstPixels = IntArray(w * h)
+        mask.getPixels(srcPixels, 0, w, 0, 0, w, h)
+        val black = android.graphics.Color.BLACK
+        for (i in srcPixels.indices) {
+            val alpha = (srcPixels[i] ushr 24) and 0xFF
+            dstPixels[i] = if (alpha > 0) 0 else black
+        }
+        result.setPixels(dstPixels, 0, w, 0, 0, w, h)
+        return result
     }
 }

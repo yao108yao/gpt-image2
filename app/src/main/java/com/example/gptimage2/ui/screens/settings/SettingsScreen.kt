@@ -26,6 +26,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var expanded by remember { mutableStateOf(false) }
+    var deleteTargetIndex by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -94,7 +95,7 @@ fun SettingsScreen(
                                         }
                                         // Delete button for all providers
                                         IconButton(
-                                            onClick = { viewModel.removeProvider(index) }
+                                            onClick = { deleteTargetIndex = index }
                                         ) {
                                             Icon(
                                                 Icons.Default.Delete,
@@ -168,6 +169,34 @@ fun SettingsScreen(
                 text = "当前 Base URL: ${state.currentBaseUrl}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    // Delete confirmation dialog
+    deleteTargetIndex?.let { index ->
+        val provider = state.allProviders.getOrNull(index)
+        if (provider != null) {
+            AlertDialog(
+                onDismissRequest = { deleteTargetIndex = null },
+                title = { Text("删除供应商") },
+                text = { Text("确定要删除「${provider.name}」吗？") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.removeProvider(index)
+                            deleteTargetIndex = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("删除")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteTargetIndex = null }) {
+                        Text("取消")
+                    }
+                }
             )
         }
     }

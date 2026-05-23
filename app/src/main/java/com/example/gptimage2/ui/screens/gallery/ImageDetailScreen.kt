@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,11 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +36,18 @@ fun ImageDetailScreen(
     val context = LocalContext.current
     val file = File(filePath)
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var saveResult by remember { mutableStateOf<String?>(null) }
+
+    var scale by remember { mutableStateOf(1f) }
+    var rotation by remember { mutableStateOf(0f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    LaunchedEffect(saveResult) {
+        if (saveResult != null) {
+            delay(2000)
+            saveResult = null
+        }
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -70,7 +87,10 @@ fun ImageDetailScreen(
         bottomBar = {
             BottomAppBar {
                 IconButton(
-                    onClick = { saveToDevice(context, file) },
+                    onClick = {
+                        val success = saveToDevice(context, file)
+                        saveResult = if (success) "已保存到相册" else "保存失败"
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -108,27 +128,67 @@ fun ImageDetailScreen(
             AsyncImage(
                 model = file,
                 contentDescription = "Generated image",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, rot ->
+                            scale = (scale * zoom).coerceIn(0.5f, 5f)
+                            rotation += rot
+                            offset = Offset(
+                                x = offset.x + pan.x,
+                                y = offset.y + pan.y
+                            )
+                        }
+                    }
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                        translationX = offset.x
+                        translationY = offset.y
+                    },
                 contentScale = ContentScale.Fit
             )
+
+            saveResult?.let { message ->
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp),
+                    color = MaterialTheme.colorScheme.inverseSurface,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
     }
 }
 
-private fun saveToDevice(context: Context, file: File) {
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, file.name)
-        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/GPT Image 2")
-    }
-    val uri = context.contentResolver.insert(
-        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-        contentValues
-    )
-    uri?.let {
-        context.contentResolver.openOutputStream(it)?.use { outputStream ->
-            file.inputStream().use { inputStream -> inputStream.copyTo(outputStream) }
+private fun saveToDevice(context: Context, file: File): Boolean {
+    return try {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, file.name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/GPT Image 2")
         }
+        val uri = context.contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues
+        )
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                file.inputStream().use { inputStream -> inputStream.copyTo(outputStream) }
+            }
+        }
+        uri != null
+    } catch (_: Exception) {
+        false
     }
 }
 

@@ -3,20 +3,27 @@ package com.example.gptimage2.ui.screens.mask
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.gptimage2.ui.components.GenerateButton
@@ -52,6 +59,69 @@ fun MaskEditorScreen(
         uri?.let { viewModel.loadSourceImage(context, it) }
     }
 
+    if (state.isFullscreen && state.sourceBitmap != null) {
+        // Fullscreen mask editing mode - use Dialog to cover everything including bottom nav
+        Dialog(
+            onDismissRequest = viewModel::exitFullscreen,
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                MaskCanvas(
+                    sourceBitmap = state.sourceBitmap,
+                    maskBitmap = state.maskBitmap,
+                    maskVersion = state.maskVersion,
+                    brushSize = state.brushSize,
+                    isPaintMode = state.drawMode == DrawMode.PAINT,
+                    onDraw = viewModel::onDraw,
+                    onDrawLine = viewModel::onDrawLine,
+                    modifier = Modifier.fillMaxSize(),
+                    fillBounds = true
+                )
+
+                // Bottom toolbar overlay
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .navigationBarsPadding(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    BrushSettings(
+                        brushSize = state.brushSize,
+                        onBrushSizeChange = viewModel::onBrushSizeChange,
+                        isPaintMode = state.drawMode == DrawMode.PAINT,
+                        onPaintModeChange = viewModel::onDrawModeChange,
+                        onResetMask = viewModel::resetMask,
+                        showResetButton = false,
+                        showSizeLabel = true
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = viewModel::resetMask,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("重置")
+                        }
+                        Button(
+                            onClick = viewModel::exitFullscreen,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("完成涂抹")
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    // Normal mode
     Scaffold(
         topBar = {
             TopAppBar(
@@ -86,11 +156,13 @@ fun MaskEditorScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
             ) {
+                // Thumbnail preview with fullscreen button
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 280.dp)
+                        .heightIn(max = 150.dp)
                 ) {
                     MaskCanvas(
                         sourceBitmap = state.sourceBitmap,
@@ -103,6 +175,23 @@ fun MaskEditorScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // Fullscreen button
+                    SmallFloatingActionButton(
+                        onClick = viewModel::enterFullscreen,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            Icons.Default.Fullscreen,
+                            contentDescription = "全屏涂抹",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Re-pick image button
                     SmallFloatingActionButton(
                         onClick = {
                             imagePicker.launch(
@@ -110,7 +199,7 @@ fun MaskEditorScreen(
                             )
                         },
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
+                            .align(Alignment.TopStart)
                             .padding(8.dp),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -122,15 +211,6 @@ fun MaskEditorScreen(
                         )
                     }
                 }
-
-                BrushSettings(
-                    brushSize = state.brushSize,
-                    onBrushSizeChange = viewModel::onBrushSizeChange,
-                    isPaintMode = state.drawMode == DrawMode.PAINT,
-                    onPaintModeChange = viewModel::onDrawModeChange,
-                    onResetMask = viewModel::resetMask,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 

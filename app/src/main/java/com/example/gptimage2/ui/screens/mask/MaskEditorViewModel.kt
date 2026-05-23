@@ -33,7 +33,8 @@ data class MaskEditorUiState(
     val resultImagePath: String? = null,
     val error: String? = null,
     val providers: List<ApiProvider> = emptyList(),
-    val selectedProviderIndex: Int = 0
+    val selectedProviderIndex: Int = 0,
+    val isFullscreen: Boolean = false
 )
 
 class MaskEditorViewModel : ViewModel() {
@@ -66,12 +67,28 @@ class MaskEditorViewModel : ViewModel() {
         _state.value = _state.value.copy(selectedProviderIndex = index)
     }
 
+    fun enterFullscreen() {
+        _state.value = _state.value.copy(isFullscreen = true)
+    }
+
+    fun exitFullscreen() {
+        _state.value = _state.value.copy(isFullscreen = false)
+    }
+
     fun loadSourceImage(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri) ?: return@launch
-                val bitmap = BitmapFactory.decodeStream(inputStream)
+                val rawBitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
+
+                val maxDim = 1024
+                val bitmap = if (rawBitmap.width > maxDim || rawBitmap.height > maxDim) {
+                    val scale = minOf(maxDim.toFloat() / rawBitmap.width, maxDim.toFloat() / rawBitmap.height)
+                    val w = (rawBitmap.width * scale).toInt()
+                    val h = (rawBitmap.height * scale).toInt()
+                    Bitmap.createScaledBitmap(rawBitmap, w, h, true).also { rawBitmap.recycle() }
+                } else rawBitmap
 
                 val tempFile = File(context.cacheDir, "mask_source_${System.currentTimeMillis()}.png")
                 BitmapUtils.saveBitmapToFile(bitmap, tempFile)
@@ -146,7 +163,8 @@ class MaskEditorViewModel : ViewModel() {
                     _state.value.sourceFile!!.parent!!,
                     "mask_${System.currentTimeMillis()}.png"
                 )
-                BitmapUtils.saveBitmapToFile(maskBitmap, actualMaskFile)
+                val invertedMask = BitmapUtils.invertMaskForApi(maskBitmap)
+                BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
 
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
