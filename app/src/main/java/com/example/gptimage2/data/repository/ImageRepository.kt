@@ -28,8 +28,6 @@ class ImageRepository(
 
     private val retryableStatuses = setOf(408, 429, 500, 502, 503, 504)
 
-    private val generationsUrl = "https://www.dreamfield.top/v1/images/generations"
-    private val editsUrl = "https://www.dreamfield.top/v1/images/edits"
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val imageMediaType = "image/png".toMediaType()
 
@@ -40,7 +38,8 @@ class ImageRepository(
         size: String,
         n: Int = 1
     ): GenerationResult = withContext(Dispatchers.IO) {
-        val apiKey = apiKeyStore.getApiKeySync()
+        val baseUrl = apiKeyStore.getBaseUrl()
+        val apiKey = apiKeyStore.getApiKeyForProvider(baseUrl)
         if (apiKey.isBlank()) {
             return@withContext GenerationResult(filePath = "", isSuccess = false, errorMessage = "未设置 API Key")
         }
@@ -48,8 +47,7 @@ class ImageRepository(
         val jsonBody = """{"model":"gpt-image-2","prompt":${moshi.adapter(String::class.java).toJson(prompt)},"size":"$size","n":$n,"response_format":"b64_json"}"""
 
         val request = Request.Builder()
-            .url(generationsUrl)
-            .addHeader("Authorization", "Bearer $apiKey")
+            .url("$baseUrl/images/generations")
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody(jsonMediaType))
             .build()
@@ -68,7 +66,8 @@ class ImageRepository(
         maskFile: File? = null,
         n: Int = 1
     ): GenerationResult = withContext(Dispatchers.IO) {
-        val apiKey = apiKeyStore.getApiKeySync()
+        val baseUrl = apiKeyStore.getBaseUrl()
+        val apiKey = apiKeyStore.getApiKeyForProvider(baseUrl)
         if (apiKey.isBlank()) {
             return@withContext GenerationResult(filePath = "", isSuccess = false, errorMessage = "未设置 API Key")
         }
@@ -91,8 +90,7 @@ class ImageRepository(
             .build()
 
         val request = Request.Builder()
-            .url(editsUrl)
-            .addHeader("Authorization", "Bearer $apiKey")
+            .url("$baseUrl/images/edits")
             .post(multipartBody)
             .build()
 

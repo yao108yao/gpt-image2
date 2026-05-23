@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -23,6 +25,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -48,11 +51,82 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
+            // Provider selector row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    OutlinedTextField(
+                        value = state.allProviders.getOrNull(state.selectedProviderIndex)?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("API 供应商") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        state.allProviders.forEachIndexed { index, provider ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(provider.name)
+                                            Text(
+                                                text = provider.baseUrl,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        // Delete button for all providers
+                                        IconButton(
+                                            onClick = { viewModel.removeProvider(index) }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "删除",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    viewModel.onProviderSelected(index)
+                                    expanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+
+                // Add provider button
+                IconButton(onClick = viewModel::showAddDialog) {
+                    Icon(Icons.Default.Add, contentDescription = "添加供应商")
+                }
+            }
+
+            // API Key input
             OutlinedTextField(
                 value = state.apiKey,
                 onValueChange = viewModel::onApiKeyChange,
                 label = { Text("API Key") },
-                placeholder = { Text("输入 Dreamfield API Key") },
+                placeholder = { Text("输入 API Key") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (state.showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -75,14 +149,14 @@ fun SettingsScreen(
             Button(
                 onClick = viewModel::saveApiKey,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = state.apiKey.isNotBlank()
+                enabled = state.apiKey.isNotBlank() && state.currentBaseUrl.isNotBlank()
             ) {
                 Text("保存")
             }
 
             if (state.saved) {
                 Text(
-                    text = "API Key 已保存",
+                    text = "设置已保存",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -91,10 +165,49 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = "API 提供商: Dreamfield\nBase URL: https://www.dreamfield.top/v1",
+                text = "当前 Base URL: ${state.currentBaseUrl}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+
+    // Add provider dialog
+    if (state.showAddDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissAddDialog,
+            title = { Text("添加自定义供应商") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = state.newProviderName,
+                        onValueChange = viewModel::onNewProviderNameChange,
+                        label = { Text("供应商名称") },
+                        placeholder = { Text("例如：My API") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = state.newProviderUrl,
+                        onValueChange = viewModel::onNewProviderUrlChange,
+                        label = { Text("Base URL") },
+                        placeholder = { Text("https://api.example.com/v1") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = viewModel::addCustomProvider,
+                    enabled = state.newProviderName.isNotBlank() && state.newProviderUrl.isNotBlank()
+                ) {
+                    Text("添加")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissAddDialog) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }

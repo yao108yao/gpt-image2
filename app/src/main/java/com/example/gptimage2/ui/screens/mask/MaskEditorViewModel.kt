@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
 import com.example.gptimage2.domain.model.ImageSize
+import com.example.gptimage2.domain.model.ApiProvider
 import com.example.gptimage2.util.ApiErrorParser
 import com.example.gptimage2.util.BitmapUtils
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,9 @@ data class MaskEditorUiState(
     val selectedSize: ImageSize = ImageSize.WIDE_1792,
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val providers: List<ApiProvider> = emptyList(),
+    val selectedProviderIndex: Int = 0
 )
 
 class MaskEditorViewModel : ViewModel() {
@@ -41,6 +44,27 @@ class MaskEditorViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     private var lastDrawPoint: android.graphics.PointF? = null
+
+    init {
+        loadProviders()
+    }
+
+    private fun loadProviders() {
+        val all = apiKeyStore.getProviders()
+        val baseUrl = apiKeyStore.getBaseUrl()
+        val index = if (baseUrl.isNotBlank()) {
+            all.indexOfFirst { it.baseUrl == baseUrl }.coerceAtLeast(0)
+        } else 0
+        _state.value = _state.value.copy(providers = all, selectedProviderIndex = index)
+    }
+
+    fun reloadProviders() = loadProviders()
+
+    fun onProviderSelected(index: Int) {
+        val provider = _state.value.providers.getOrNull(index) ?: return
+        apiKeyStore.setBaseUrl(provider.baseUrl)
+        _state.value = _state.value.copy(selectedProviderIndex = index)
+    }
 
     fun loadSourceImage(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -109,7 +133,8 @@ class MaskEditorViewModel : ViewModel() {
         val sourceFile = _state.value.sourceFile ?: return
         val maskBitmap = _state.value.maskBitmap ?: return
         if (_state.value.prompt.isBlank()) return
-        if (!apiKeyStore.hasApiKey()) {
+        val baseUrl = apiKeyStore.getBaseUrl()
+        if (apiKeyStore.getApiKeyForProvider(baseUrl).isBlank()) {
             _state.value = _state.value.copy(error = "请先在设置中配置 API Key")
             return
         }

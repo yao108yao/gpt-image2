@@ -8,12 +8,16 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.gptimage2.ui.components.GenerateButton
 import com.example.gptimage2.ui.components.PromptInput
+import com.example.gptimage2.ui.components.ProviderSelector
 import com.example.gptimage2.ui.components.SizeSelector
 import java.io.File
 
@@ -25,6 +29,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.reloadProviders()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -57,6 +72,12 @@ fun HomeScreen(
             SizeSelector(
                 selectedSize = state.selectedSize,
                 onSizeSelected = viewModel::onSizeSelected
+            )
+
+            ProviderSelector(
+                providers = state.providers,
+                selectedIndex = state.selectedProviderIndex,
+                onProviderSelected = viewModel::onProviderSelected
             )
 
             GenerateButton(

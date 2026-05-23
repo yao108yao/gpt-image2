@@ -7,14 +7,18 @@ import okhttp3.Response
 class AuthInterceptor(private val apiKeyStore: ApiKeyStore) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val key = apiKeyStore.getApiKeySync()
-        val request = if (key.isNotBlank()) {
-            chain.request().newBuilder()
+        val request = chain.request()
+        val url = request.url.toString()
+
+        // Find the matching API key by checking if any known base URL is a prefix of the request URL
+        val key = apiKeyStore.getApiKeyForRequestUrl(url)
+        val newRequest = if (key.isNotBlank()) {
+            request.newBuilder()
                 .addHeader("Authorization", "Bearer $key")
                 .build()
         } else {
-            chain.request()
+            request
         }
-        return chain.proceed(request)
+        return chain.proceed(newRequest)
     }
 }

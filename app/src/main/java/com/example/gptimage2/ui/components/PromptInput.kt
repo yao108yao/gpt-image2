@@ -20,8 +20,8 @@ fun PromptInput(
     OutlinedTextField(
         value = prompt,
         onValueChange = onPromptChange,
-        label = { Text("Prompt") },
-        placeholder = { Text("Describe the image you want to generate...") },
+        label = { Text("提示词") },
+        placeholder = { Text("描述你想生成的图片...") },
         modifier = modifier.fillMaxWidth(),
         maxLines = maxLines,
         minLines = minOf(3, maxLines),

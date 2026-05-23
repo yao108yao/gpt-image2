@@ -6,6 +6,7 @@ import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
 import com.example.gptimage2.domain.model.ImageSize
 import com.example.gptimage2.util.ApiErrorParser
+import com.example.gptimage2.domain.model.ApiProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -16,7 +17,9 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
     val error: String? = null,
-    val hasApiKey: Boolean = false
+    val hasApiKey: Boolean = false,
+    val providers: List<ApiProvider> = emptyList(),
+    val selectedProviderIndex: Int = 0
 )
 
 class HomeViewModel : ViewModel() {
@@ -28,6 +31,24 @@ class HomeViewModel : ViewModel() {
 
     init {
         _state.value = _state.value.copy(hasApiKey = apiKeyStore.hasApiKey())
+        loadProviders()
+    }
+
+    private fun loadProviders() {
+        val all = apiKeyStore.getProviders()
+        val baseUrl = apiKeyStore.getBaseUrl()
+        val index = if (baseUrl.isNotBlank()) {
+            all.indexOfFirst { it.baseUrl == baseUrl }.coerceAtLeast(0)
+        } else 0
+        _state.value = _state.value.copy(providers = all, selectedProviderIndex = index)
+    }
+
+    fun reloadProviders() = loadProviders()
+
+    fun onProviderSelected(index: Int) {
+        val provider = _state.value.providers.getOrNull(index) ?: return
+        apiKeyStore.setBaseUrl(provider.baseUrl)
+        _state.value = _state.value.copy(selectedProviderIndex = index)
     }
 
     fun onPromptChange(prompt: String) {
@@ -40,7 +61,8 @@ class HomeViewModel : ViewModel() {
 
     fun generateImage() {
         if (_state.value.prompt.isBlank()) return
-        if (!apiKeyStore.hasApiKey()) {
+        val baseUrl = apiKeyStore.getBaseUrl()
+        if (apiKeyStore.getApiKeyForProvider(baseUrl).isBlank()) {
             _state.value = _state.value.copy(error = "请先在设置中配置 API Key")
             return
         }
