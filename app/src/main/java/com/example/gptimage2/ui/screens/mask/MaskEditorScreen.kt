@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -289,7 +288,7 @@ fun MaskEditorScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                Spacer(modifier = Modifier.navigationBarsPadding())
             }
         }
     }
