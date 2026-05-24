@@ -161,8 +161,9 @@ fun MaskEditorScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
+                    .padding(innerPadding)
+                    .navigationBarsPadding()
             ) {
                 // Thumbnail preview - click to enter fullscreen
                 Box(
@@ -287,7 +288,6 @@ fun MaskEditorScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Spacer(modifier = Modifier.navigationBarsPadding())
             }
         }
     }

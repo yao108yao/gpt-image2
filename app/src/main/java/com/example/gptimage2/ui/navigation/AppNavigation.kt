@@ -81,7 +81,7 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.consumeWindowInsets(innerPadding)
+            modifier = Modifier
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
