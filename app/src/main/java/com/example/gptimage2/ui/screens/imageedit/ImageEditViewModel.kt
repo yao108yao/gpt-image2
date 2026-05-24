@@ -27,7 +27,8 @@ data class ImageEditUiState(
     val resultImagePath: String? = null,
     val error: String? = null,
     val providers: List<ApiProvider> = emptyList(),
-    val selectedProviderIndex: Int = 0
+    val selectedProviderIndex: Int = 0,
+    val previewImageUri: Uri? = null
 )
 
 class ImageEditViewModel : ViewModel() {
@@ -82,6 +83,10 @@ class ImageEditViewModel : ViewModel() {
         _state.value = _state.value.copy(
             selectedImageUris = _state.value.selectedImageUris.toMutableList().apply { removeAt(index) }
         )
+    }
+
+    fun onImagePreview(uri: Uri?) {
+        _state.value = _state.value.copy(previewImageUri = uri)
     }
 
     fun generateImage(context: Context) {

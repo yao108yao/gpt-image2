@@ -4,11 +4,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -159,11 +159,12 @@ fun MaskEditorScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Thumbnail preview with fullscreen button
+                // Thumbnail preview - click to enter fullscreen
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 150.dp)
+                        .heightIn(max = 300.dp)
+                        .clickable { viewModel.enterFullscreen() }
                 ) {
                     MaskCanvas(
                         sourceBitmap = state.sourceBitmap,
@@ -171,26 +172,11 @@ fun MaskEditorScreen(
                         maskVersion = state.maskVersion,
                         brushSize = state.brushSize,
                         isPaintMode = state.drawMode == DrawMode.PAINT,
-                        onDraw = viewModel::onDraw,
-                        onDrawLine = viewModel::onDrawLine,
-                        modifier = Modifier.fillMaxWidth()
+                        onDraw = { _, _ -> },
+                        onDrawLine = { _, _, _, _ -> },
+                        modifier = Modifier.fillMaxWidth(),
+                        interactive = false
                     )
-
-                    // Fullscreen button
-                    SmallFloatingActionButton(
-                        onClick = viewModel::enterFullscreen,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            Icons.Default.Fullscreen,
-                            contentDescription = "全屏涂抹",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
 
                     // Re-pick image button
                     SmallFloatingActionButton(

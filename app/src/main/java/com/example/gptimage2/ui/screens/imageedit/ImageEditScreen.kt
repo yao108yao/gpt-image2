@@ -1,5 +1,6 @@
 package com.example.gptimage2.ui.screens.imageedit
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.unit.dp
@@ -39,6 +42,28 @@ fun ImageEditScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Fullscreen image preview dialog
+    state.previewImageUri?.let { previewUri ->
+        Dialog(
+            onDismissRequest = { viewModel.onImagePreview(null) },
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { viewModel.onImagePreview(null) },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = previewUri,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
     }
 
     Scaffold(
@@ -80,7 +105,8 @@ fun ImageEditScreen(
                 ImagePickerButton(
                     selectedUris = state.selectedImageUris,
                     onUrisSelected = viewModel::onImagesSelected,
-                    onUriRemoved = viewModel::onImageRemoved
+                    onUriRemoved = viewModel::onImageRemoved,
+                    onImageClick = { uri -> viewModel.onImagePreview(uri) }
                 )
 
                 PromptInput(
@@ -90,20 +116,22 @@ fun ImageEditScreen(
                     maxLines = 4
                 )
 
-                SizeSelector(
-                    selectedSize = state.selectedSize,
-                    onSizeSelected = viewModel::onSizeSelected
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SizeSelector(
+                        selectedSize = state.selectedSize,
+                        onSizeSelected = viewModel::onSizeSelected
+                    )
 
-                QualitySelector(
-                    selectedQuality = state.quality,
-                    onQualitySelected = viewModel::onQualitySelected
-                )
+                    QualitySelector(
+                        selectedQuality = state.quality,
+                        onQualitySelected = viewModel::onQualitySelected
+                    )
 
-                OutputFormatSelector(
-                    selectedFormat = state.outputFormat,
-                    onFormatSelected = viewModel::onOutputFormatSelected
-                )
+                    OutputFormatSelector(
+                        selectedFormat = state.outputFormat,
+                        onFormatSelected = viewModel::onOutputFormatSelected
+                    )
+                }
 
                 ProviderSelector(
                     providers = state.providers,

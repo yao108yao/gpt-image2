@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -22,7 +23,8 @@ fun ImagePickerButton(
     selectedUris: List<Uri>,
     onUrisSelected: (List<Uri>) -> Unit,
     onUriRemoved: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onImageClick: ((Uri) -> Unit)? = null
 ) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia()
@@ -62,6 +64,10 @@ fun ImagePickerButton(
                         modifier = Modifier
                             .size(80.dp)
                             .clip(MaterialTheme.shapes.small)
+                            .then(
+                                if (onImageClick != null) Modifier.clickable { onImageClick(uri) }
+                                else Modifier
+                            )
                     ) {
                         AsyncImage(
                             model = uri,
