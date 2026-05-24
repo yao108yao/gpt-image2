@@ -5,15 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
 import com.example.gptimage2.domain.model.ImageSize
-import com.example.gptimage2.util.ApiErrorParser
+import com.example.gptimage2.domain.model.Quality
+import com.example.gptimage2.domain.model.OutputFormat
 import com.example.gptimage2.domain.model.ApiProvider
+import com.example.gptimage2.util.ApiErrorParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val prompt: String = "",
-    val selectedSize: ImageSize = ImageSize.WIDE_1792,
+    val selectedSize: ImageSize = ImageSize.AUTO,
+    val quality: Quality = Quality.AUTO,
+    val outputFormat: OutputFormat = OutputFormat.PNG,
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
     val error: String? = null,
@@ -59,6 +63,14 @@ class HomeViewModel : ViewModel() {
         _state.value = _state.value.copy(selectedSize = size)
     }
 
+    fun onQualitySelected(quality: Quality) {
+        _state.value = _state.value.copy(quality = quality)
+    }
+
+    fun onOutputFormatSelected(format: OutputFormat) {
+        _state.value = _state.value.copy(outputFormat = format)
+    }
+
     fun generateImage() {
         if (_state.value.prompt.isBlank()) return
         val baseUrl = apiKeyStore.getBaseUrl()
@@ -70,9 +82,17 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null, resultImagePath = null)
             try {
+                val selectedSize = _state.value.selectedSize
+                val sizeValue = if (selectedSize == ImageSize.AUTO) null else selectedSize.apiValue
+                val qualityValue = _state.value.quality
+                val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
+                val outputFormat = _state.value.outputFormat
+                val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
                 val result = repository.textToImage(
                     prompt = _state.value.prompt,
-                    size = _state.value.selectedSize.apiValue
+                    size = sizeValue,
+                    quality = qualityParam,
+                    outputFormat = formatParam
                 )
                 if (result.isSuccess) {
                     _state.value = _state.value.copy(

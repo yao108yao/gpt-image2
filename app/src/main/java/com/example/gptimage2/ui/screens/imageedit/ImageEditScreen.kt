@@ -95,6 +95,16 @@ fun ImageEditScreen(
                     onSizeSelected = viewModel::onSizeSelected
                 )
 
+                QualitySelector(
+                    selectedQuality = state.quality,
+                    onQualitySelected = viewModel::onQualitySelected
+                )
+
+                OutputFormatSelector(
+                    selectedFormat = state.outputFormat,
+                    onFormatSelected = viewModel::onOutputFormatSelected
+                )
+
                 ProviderSelector(
                     providers = state.providers,
                     selectedIndex = state.selectedProviderIndex,

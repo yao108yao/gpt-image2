@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
 import com.example.gptimage2.domain.model.ApiProvider
+import com.example.gptimage2.domain.model.Quality
+import com.example.gptimage2.domain.model.OutputFormat
 import com.example.gptimage2.util.ApiErrorParser
 import com.example.gptimage2.util.BitmapUtils
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +29,8 @@ data class MaskEditorUiState(
     val brushSize: Int = 30,
     val drawMode: DrawMode = DrawMode.PAINT,
     val prompt: String = "",
+    val quality: Quality = Quality.AUTO,
+    val outputFormat: OutputFormat = OutputFormat.PNG,
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
     val error: String? = null,
@@ -80,11 +84,11 @@ class MaskEditorViewModel : ViewModel() {
                 val rawBitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
 
-                val maxDim = 1024
+                val maxDim = 2048
                 val bitmap = if (rawBitmap.width > maxDim || rawBitmap.height > maxDim) {
                     val scale = minOf(maxDim.toFloat() / rawBitmap.width, maxDim.toFloat() / rawBitmap.height)
-                    val w = (rawBitmap.width * scale).toInt()
-                    val h = (rawBitmap.height * scale).toInt()
+                    val w = ((rawBitmap.width * scale).toInt() / 16) * 16
+                    val h = ((rawBitmap.height * scale).toInt() / 16) * 16
                     Bitmap.createScaledBitmap(rawBitmap, w, h, true).also { rawBitmap.recycle() }
                 } else rawBitmap
 
@@ -140,6 +144,14 @@ class MaskEditorViewModel : ViewModel() {
         _state.value = _state.value.copy(prompt = prompt)
     }
 
+    fun onQualitySelected(quality: Quality) {
+        _state.value = _state.value.copy(quality = quality)
+    }
+
+    fun onOutputFormatSelected(format: OutputFormat) {
+        _state.value = _state.value.copy(outputFormat = format)
+    }
+
     fun generateInpainting() {
         val sourceFile = _state.value.sourceFile ?: return
         val maskBitmap = _state.value.maskBitmap ?: return
@@ -161,11 +173,16 @@ class MaskEditorViewModel : ViewModel() {
                 BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
 
                 val sourceBitmap = _state.value.sourceBitmap!!
-                val sourceSize = "${sourceBitmap.width}x${sourceBitmap.height}"
+                val qualityValue = _state.value.quality
+                val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
+                val outputFormat = _state.value.outputFormat
+                val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
 
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
-                    size = sourceSize,
+                    size = null,
+                    quality = qualityParam,
+                    outputFormat = formatParam,
                     imageFiles = listOf(sourceFile),
                     maskFile = actualMaskFile
                 )

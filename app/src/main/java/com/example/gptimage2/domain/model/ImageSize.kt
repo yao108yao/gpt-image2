@@ -1,22 +1,12 @@
 package com.example.gptimage2.domain.model
 
-import android.graphics.Bitmap
-
 enum class ImageSize(val label: String, val apiValue: String) {
-    SQUARE_1024("1024 × 1024", "1024x1024"),
-    WIDE_1792("1792 × 1024", "1792x1024"),
-    TALL_1024("1024 × 1792", "1024x1792");
-
-    companion object {
-        fun fromBitmap(bitmap: Bitmap): ImageSize {
-            val w = bitmap.width
-            val h = bitmap.height
-            val aspect = w.toFloat() / h.toFloat()
-            return when {
-                aspect > 1.3f -> WIDE_1792
-                aspect < 0.77f -> TALL_1024
-                else -> SQUARE_1024
-            }
-        }
-    }
+    AUTO("自动", "auto"),
+    SQUARE_1024("1024×1024", "1024x1024"),
+    WIDE_1536("1536×1024", "1536x1024"),
+    TALL_1536("1024×1536", "1024x1536"),
+    SQUARE_2048("2048×2048", "2048x2048"),
+    WIDE_2048("2048×1152", "2048x1152"),
+    WIDE_4K("3840×2160", "3840x2160"),
+    TALL_4K("2160×3840", "2160x3840")
 }

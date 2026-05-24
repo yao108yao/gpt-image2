@@ -23,9 +23,14 @@ object BitmapUtils {
         return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
     }
 
-    fun saveBitmapToFile(bitmap: Bitmap, file: File) {
+    fun saveBitmapToFile(
+        bitmap: Bitmap,
+        file: File,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
+        compression: Int = 100
+    ) {
         FileOutputStream(file).use { fos ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            bitmap.compress(format, compression, fos)
         }
     }
 

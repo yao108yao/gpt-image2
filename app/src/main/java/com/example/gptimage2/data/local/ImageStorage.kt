@@ -22,16 +22,17 @@ class ImageStorage(context: Context) {
     fun getImagesFlow(): Flow<List<File>> = _images.asStateFlow()
 
     fun refreshList() {
+        val extensions = setOf("png", "jpg", "jpeg", "webp")
         val files = generatedDir.listFiles()
-            ?.filter { it.extension == "png" }
+            ?.filter { it.extension.lowercase() in extensions }
             ?.sortedByDescending { it.lastModified() }
             ?: emptyList()
         _images.value = files
     }
 
-    fun createOutputFile(): File {
+    fun createOutputFile(extension: String = "png"): File {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        return File(generatedDir, "image2_$timestamp.png")
+        return File(generatedDir, "image2_$timestamp.$extension")
     }
 
     fun deleteImage(file: File): Boolean {

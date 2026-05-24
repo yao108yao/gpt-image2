@@ -29,6 +29,8 @@ import coil.compose.AsyncImage
 import com.example.gptimage2.ui.components.GenerateButton
 import com.example.gptimage2.ui.components.PromptInput
 import com.example.gptimage2.ui.components.ProviderSelector
+import com.example.gptimage2.ui.components.QualitySelector
+import com.example.gptimage2.ui.components.OutputFormatSelector
 import com.example.gptimage2.ui.components.SizeSelector
 import java.io.File
 
@@ -222,6 +224,16 @@ fun MaskEditorScreen(
                         onPromptChange = viewModel::onPromptChange,
                         enabled = !state.isLoading,
                         maxLines = 2
+                    )
+
+                    QualitySelector(
+                        selectedQuality = state.quality,
+                        onQualitySelected = viewModel::onQualitySelected
+                    )
+
+                    OutputFormatSelector(
+                        selectedFormat = state.outputFormat,
+                        onFormatSelected = viewModel::onOutputFormatSelected
                     )
 
                     ProviderSelector(

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
 import com.example.gptimage2.domain.model.ImageSize
+import com.example.gptimage2.domain.model.Quality
+import com.example.gptimage2.domain.model.OutputFormat
 import com.example.gptimage2.util.ApiErrorParser
 import com.example.gptimage2.domain.model.ApiProvider
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +19,9 @@ import java.io.File
 
 data class ImageEditUiState(
     val prompt: String = "",
-    val selectedSize: ImageSize = ImageSize.WIDE_1792,
+    val selectedSize: ImageSize = ImageSize.AUTO,
+    val quality: Quality = Quality.AUTO,
+    val outputFormat: OutputFormat = OutputFormat.PNG,
     val selectedImageUris: List<Uri> = emptyList(),
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
@@ -62,6 +66,14 @@ class ImageEditViewModel : ViewModel() {
         _state.value = _state.value.copy(selectedSize = size)
     }
 
+    fun onQualitySelected(quality: Quality) {
+        _state.value = _state.value.copy(quality = quality)
+    }
+
+    fun onOutputFormatSelected(format: OutputFormat) {
+        _state.value = _state.value.copy(outputFormat = format)
+    }
+
     fun onImagesSelected(uris: List<Uri>) {
         _state.value = _state.value.copy(selectedImageUris = _state.value.selectedImageUris + uris)
     }
@@ -85,9 +97,17 @@ class ImageEditViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoading = true, error = null, resultImagePath = null)
             try {
                 val imageFiles = copyUrisToTempFiles(context, _state.value.selectedImageUris)
+                val selectedSize = _state.value.selectedSize
+                val sizeValue = if (selectedSize == ImageSize.AUTO) null else selectedSize.apiValue
+                val qualityValue = _state.value.quality
+                val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
+                val outputFormat = _state.value.outputFormat
+                val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
-                    size = _state.value.selectedSize.apiValue,
+                    size = sizeValue,
+                    quality = qualityParam,
+                    outputFormat = formatParam,
                     imageFiles = imageFiles
                 )
                 if (result.isSuccess) {
