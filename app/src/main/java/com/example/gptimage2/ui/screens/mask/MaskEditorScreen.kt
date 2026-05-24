@@ -159,17 +159,19 @@ fun MaskEditorScreen(
                 }
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(innerPadding)
-                    .navigationBarsPadding()
+            BoxWithConstraints(
+                modifier = Modifier.padding(innerPadding)
             ) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
+                ) {
                 // Thumbnail preview - click to enter fullscreen
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(state.sourceBitmap!!.width.toFloat() / state.sourceBitmap!!.height.toFloat())
+                        .heightIn(max = this@BoxWithConstraints.maxHeight * 0.4f)
                         .clickable { viewModel.enterFullscreen() }
                 ) {
                     MaskCanvas(
@@ -288,6 +290,7 @@ fun MaskEditorScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
