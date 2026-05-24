@@ -101,8 +101,14 @@ fun MaskEditorScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        OutlinedButton(
+                            onClick = viewModel::cancelFullscreen,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("取消")
+                        }
                         OutlinedButton(
                             onClick = viewModel::resetMask,
                             modifier = Modifier.weight(1f)
@@ -113,7 +119,7 @@ fun MaskEditorScreen(
                             onClick = viewModel::exitFullscreen,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("完成涂抹")
+                            Text("完成")
                         }
                     }
                 }

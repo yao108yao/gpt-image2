@@ -47,6 +47,7 @@ class MaskEditorViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     private var lastDrawPoint: android.graphics.PointF? = null
+    private var maskBeforeFullscreen: Bitmap? = null
 
     init {
         loadProviders()
@@ -70,11 +71,27 @@ class MaskEditorViewModel : ViewModel() {
     }
 
     fun enterFullscreen() {
+        _state.value.maskBitmap?.let { maskBeforeFullscreen = it.copy(it.config ?: Bitmap.Config.ARGB_8888, false) }
         _state.value = _state.value.copy(isFullscreen = true)
     }
 
     fun exitFullscreen() {
+        maskBeforeFullscreen = null
         _state.value = _state.value.copy(isFullscreen = false)
+    }
+
+    fun cancelFullscreen() {
+        val saved = maskBeforeFullscreen
+        if (saved != null) {
+            _state.value = _state.value.copy(
+                isFullscreen = false,
+                maskBitmap = saved,
+                maskVersion = _state.value.maskVersion + 1
+            )
+        } else {
+            _state.value = _state.value.copy(isFullscreen = false)
+        }
+        maskBeforeFullscreen = null
     }
 
     fun loadSourceImage(context: Context, uri: Uri) {
