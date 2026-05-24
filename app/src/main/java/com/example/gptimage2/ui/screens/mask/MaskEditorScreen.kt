@@ -169,7 +169,7 @@ fun MaskEditorScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp)
+                        .aspectRatio(state.sourceBitmap!!.width.toFloat() / state.sourceBitmap!!.height.toFloat())
                         .clickable { viewModel.enterFullscreen() }
                 ) {
                     MaskCanvas(
