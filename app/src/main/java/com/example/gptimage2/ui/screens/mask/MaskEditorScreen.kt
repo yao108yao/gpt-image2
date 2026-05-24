@@ -161,7 +161,6 @@ fun MaskEditorScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
