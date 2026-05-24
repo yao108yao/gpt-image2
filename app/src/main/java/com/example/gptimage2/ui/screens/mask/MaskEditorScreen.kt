@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -31,7 +32,6 @@ import com.example.gptimage2.ui.components.PromptInput
 import com.example.gptimage2.ui.components.ProviderSelector
 import com.example.gptimage2.ui.components.QualitySelector
 import com.example.gptimage2.ui.components.OutputFormatSelector
-import com.example.gptimage2.ui.components.SizeSelector
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -159,19 +159,18 @@ fun MaskEditorScreen(
                 }
             }
         } else {
-            BoxWithConstraints(
-                modifier = Modifier.padding(innerPadding)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .navigationBarsPadding()
-                ) {
                 // Thumbnail preview - click to enter fullscreen
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = this@BoxWithConstraints.maxHeight * 0.4f)
+                        .requiredHeight(200.dp)
+                        .clipToBounds()
                         .clickable { viewModel.enterFullscreen() }
                 ) {
                     MaskCanvas(
@@ -290,7 +289,7 @@ fun MaskEditorScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                }
+                Spacer(modifier = Modifier.navigationBarsPadding())
             }
         }
     }

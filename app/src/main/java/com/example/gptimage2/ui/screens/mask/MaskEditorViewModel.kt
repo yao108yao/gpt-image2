@@ -71,7 +71,7 @@ class MaskEditorViewModel : ViewModel() {
     }
 
     fun enterFullscreen() {
-        _state.value.maskBitmap?.let { maskBeforeFullscreen = it.copy(it.config ?: Bitmap.Config.ARGB_8888, false) }
+        _state.value.maskBitmap?.let { maskBeforeFullscreen = it.copy(it.config ?: Bitmap.Config.ARGB_8888, true) }
         _state.value = _state.value.copy(isFullscreen = true)
     }
 
@@ -102,10 +102,11 @@ class MaskEditorViewModel : ViewModel() {
                 inputStream.close()
 
                 val maxDim = 2048
-                val bitmap = if (rawBitmap.width > maxDim || rawBitmap.height > maxDim) {
-                    val scale = minOf(maxDim.toFloat() / rawBitmap.width, maxDim.toFloat() / rawBitmap.height)
-                    val w = ((rawBitmap.width * scale).toInt() / 16) * 16
-                    val h = ((rawBitmap.height * scale).toInt() / 16) * 16
+                val needScale = rawBitmap.width > maxDim || rawBitmap.height > maxDim
+                val scale = if (needScale) minOf(maxDim.toFloat() / rawBitmap.width, maxDim.toFloat() / rawBitmap.height) else 1f
+                val w = ((rawBitmap.width * scale).toInt() / 16) * 16
+                val h = ((rawBitmap.height * scale).toInt() / 16) * 16
+                val bitmap = if (w != rawBitmap.width || h != rawBitmap.height) {
                     Bitmap.createScaledBitmap(rawBitmap, w, h, true).also { rawBitmap.recycle() }
                 } else rawBitmap
 
@@ -186,10 +187,10 @@ class MaskEditorViewModel : ViewModel() {
                     _state.value.sourceFile!!.parent!!,
                     "mask_${System.currentTimeMillis()}.png"
                 )
+                val sourceBitmap = _state.value.sourceBitmap!!
                 val invertedMask = BitmapUtils.invertMaskForApi(maskBitmap)
                 BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
 
-                val sourceBitmap = _state.value.sourceBitmap!!
                 val qualityValue = _state.value.quality
                 val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
                 val outputFormat = _state.value.outputFormat

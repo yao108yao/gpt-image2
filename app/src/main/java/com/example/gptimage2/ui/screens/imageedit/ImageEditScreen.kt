@@ -94,7 +94,6 @@ fun ImageEditScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),

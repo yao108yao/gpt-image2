@@ -45,8 +45,8 @@ fun MaskCanvas(
     ) {
         Canvas(
             modifier = Modifier
+                .fillMaxWidth()
                 .aspectRatio(imageAspect)
-                .fillMaxSize()
                 .align(Alignment.Center)
                 .then(
                     if (interactive) Modifier.pointerInput(sourceBitmap, maskBitmap, brushSize, isPaintMode) {
