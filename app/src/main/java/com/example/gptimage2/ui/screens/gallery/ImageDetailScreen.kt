@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -130,6 +131,7 @@ fun ImageDetailScreen(
                 contentDescription = "Generated image",
                 modifier = Modifier
                     .fillMaxSize()
+                    .clickable { onBack() }
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, rot ->
                             scale = (scale * zoom).coerceIn(0.5f, 5f)

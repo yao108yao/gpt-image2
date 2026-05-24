@@ -141,6 +141,7 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }
 }
