@@ -83,16 +83,14 @@ class HomeViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoading = true, error = null, resultImagePath = null)
             try {
                 val selectedSize = _state.value.selectedSize
-                val sizeValue = if (selectedSize == ImageSize.AUTO) null else selectedSize.apiValue
+                val sizeValue = selectedSize.apiValue
                 val qualityValue = _state.value.quality
                 val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
                 val outputFormat = _state.value.outputFormat
                 val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
                 val result = repository.textToImage(
                     prompt = _state.value.prompt,
-                    size = sizeValue,
-                    quality = qualityParam,
-                    outputFormat = formatParam
+                    size = sizeValue
                 )
                 if (result.isSuccess) {
                     _state.value = _state.value.copy(

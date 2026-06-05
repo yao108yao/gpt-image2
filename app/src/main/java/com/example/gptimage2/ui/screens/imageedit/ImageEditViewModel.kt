@@ -103,16 +103,10 @@ class ImageEditViewModel : ViewModel() {
             try {
                 val imageFiles = copyUrisToTempFiles(context, _state.value.selectedImageUris)
                 val selectedSize = _state.value.selectedSize
-                val sizeValue = if (selectedSize == ImageSize.AUTO) null else selectedSize.apiValue
-                val qualityValue = _state.value.quality
-                val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
-                val outputFormat = _state.value.outputFormat
-                val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
+                val sizeValue = selectedSize.apiValue
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
                     size = sizeValue,
-                    quality = qualityParam,
-                    outputFormat = formatParam,
                     imageFiles = imageFiles
                 )
                 if (result.isSuccess) {
