@@ -92,102 +92,115 @@ fun ImageEditScreen(
                 )
             }
         } else {
-            Column(
+            Box(
                 modifier = Modifier
+                    .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                ImagePickerButton(
-                    selectedUris = state.selectedImageUris,
-                    onUrisSelected = viewModel::onImagesSelected,
-                    onUriRemoved = viewModel::onImageRemoved,
-                    onImageClick = { uri -> viewModel.onImagePreview(uri) }
-                )
-
-                PromptInput(
-                    prompt = state.prompt,
-                    onPromptChange = viewModel::onPromptChange,
-                    enabled = !state.isLoading,
-                    maxLines = 4
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SizeSelector(
-                        selectedSize = state.selectedSize,
-                        onSizeSelected = viewModel::onSizeSelected
+                    ImagePickerButton(
+                        selectedUris = state.selectedImageUris,
+                        onUrisSelected = viewModel::onImagesSelected,
+                        onUriRemoved = viewModel::onImageRemoved,
+                        onImageClick = { uri -> viewModel.onImagePreview(uri) }
                     )
 
-                    QualitySelector(
-                        selectedQuality = state.quality,
-                        onQualitySelected = viewModel::onQualitySelected
+                    PromptInput(
+                        prompt = state.prompt,
+                        onPromptChange = viewModel::onPromptChange,
+                        enabled = !state.isLoading,
+                        maxLines = 4
                     )
 
-                    OutputFormatSelector(
-                        selectedFormat = state.outputFormat,
-                        onFormatSelected = viewModel::onOutputFormatSelected
-                    )
-                }
-
-                ProviderSelector(
-                    providers = state.providers,
-                    selectedIndex = state.selectedProviderIndex,
-                    onProviderSelected = viewModel::onProviderSelected
-                )
-
-                GenerateButton(
-                    onClick = { viewModel.generateImage(context) },
-                    isLoading = state.isLoading,
-                    enabled = state.prompt.isNotBlank() && state.selectedImageUris.isNotEmpty()
-                )
-
-                state.error?.let { error ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        SizeSelector(
+                            selectedSize = state.selectedSize,
+                            onSizeSelected = viewModel::onSizeSelected
                         )
-                    ) {
+
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = error,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
+                            QualitySelector(
+                                selectedQuality = state.quality,
+                                onQualitySelected = viewModel::onQualitySelected,
                                 modifier = Modifier.weight(1f)
                             )
-                            TextButton(onClick = viewModel::clearError) {
-                                Text("关闭")
+
+                            OutputFormatSelector(
+                                selectedFormat = state.outputFormat,
+                                onFormatSelected = viewModel::onOutputFormatSelected,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    ProviderSelector(
+                        providers = state.providers,
+                        selectedIndex = state.selectedProviderIndex,
+                        onProviderSelected = viewModel::onProviderSelected
+                    )
+
+                    GenerateButton(
+                        onClick = { viewModel.generateImage(context) },
+                        isLoading = state.isLoading,
+                        enabled = state.prompt.isNotBlank() && state.selectedImageUris.isNotEmpty()
+                    )
+
+                    state.error?.let { error ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = error,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = viewModel::clearError) {
+                                    Text("关闭")
+                                }
                             }
                         }
                     }
-                }
 
-                state.resultImagePath?.let { path ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { onNavigateToDetail(path) }
-                    ) {
-                        AsyncImage(
-                            model = File(path),
-                            contentDescription = "Generated image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 9f),
-                            contentScale = ContentScale.Fit
-                        )
+                    state.resultImagePath?.let { path ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onNavigateToDetail(path) }
+                        ) {
+                            AsyncImage(
+                                model = File(path),
+                                contentDescription = "Generated image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(16f / 9f),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Spacer(modifier = Modifier.navigationBarsPadding())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.navigationBarsPadding())
+                }
             }
         }
     }

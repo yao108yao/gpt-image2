@@ -6,6 +6,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -55,11 +57,11 @@ fun ImagePickerButton(
 
         if (selectedUris.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                selectedUris.forEachIndexed { index, uri ->
+                itemsIndexed(selectedUris) { index, uri ->
                     Box(
                         modifier = Modifier
                             .size(80.dp)

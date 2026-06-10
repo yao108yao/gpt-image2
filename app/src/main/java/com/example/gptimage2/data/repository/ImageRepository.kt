@@ -1,6 +1,5 @@
 package com.example.gptimage2.data.repository
 
-import android.graphics.Bitmap
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.data.local.ImageStorage
 import com.example.gptimage2.data.remote.dto.GenerationResponse
@@ -36,10 +35,7 @@ class ImageRepository(
 
     suspend fun textToImage(
         prompt: String,
-        size: String? = null,
-        quality: String? = null,
-        outputFormat: String? = null,
-        outputCompression: Int? = null,
+        size: String,
         n: Int = 1
     ): GenerationResult = withContext(Dispatchers.IO) {
         val baseUrl = apiKeyStore.getBaseUrl()
@@ -48,16 +44,7 @@ class ImageRepository(
             return@withContext GenerationResult(filePath = "", isSuccess = false, errorMessage = "未设置 API Key")
         }
 
-        val jsonBody = buildJsonObject(mapOf(
-            "model" to "\"gpt-image-2\"",
-            "prompt" to moshi.adapter(String::class.java).toJson(prompt),
-            "size" to size?.let { "\"$it\"" },
-            "quality" to quality?.let { "\"$it\"" },
-            "output_format" to outputFormat?.let { "\"$it\"" },
-            "output_compression" to outputCompression?.toString(),
-            "n" to n.toString(),
-            "response_format" to "\"b64_json\""
-        ))
+        val jsonBody = """{"model":"gpt-image-2","prompt":${moshi.adapter(String::class.java).toJson(prompt)},"size":"$size","n":$n,"response_format":"b64_json"}"""
 
         val request = Request.Builder()
             .url("$baseUrl/images/generations")
@@ -69,17 +56,14 @@ class ImageRepository(
             executeAndParse(request)
         }
 
-        handleResponse(response, parseCompressFormat(outputFormat), outputCompression ?: 100)
+        handleResponse(response)
     }
 
     suspend fun imageToImage(
         prompt: String,
-        size: String? = null,
+        size: String,
         imageFiles: List<File>,
         maskFile: File? = null,
-        quality: String? = null,
-        outputFormat: String? = null,
-        outputCompression: Int? = null,
         n: Int = 1
     ): GenerationResult = withContext(Dispatchers.IO) {
         val baseUrl = apiKeyStore.getBaseUrl()
@@ -92,12 +76,7 @@ class ImageRepository(
             .setType(MultipartBody.FORM)
             .addFormDataPart("model", "gpt-image-2")
             .addFormDataPart("prompt", prompt)
-            .apply {
-                size?.let { addFormDataPart("size", it) }
-                quality?.let { addFormDataPart("quality", it) }
-                outputFormat?.let { addFormDataPart("output_format", it) }
-                outputCompression?.let { addFormDataPart("output_compression", it.toString()) }
-            }
+            .addFormDataPart("size", size)
             .addFormDataPart("n", n.toString())
             .addFormDataPart("response_format", "b64_json")
             .apply {
@@ -119,7 +98,7 @@ class ImageRepository(
             executeAndParse(request)
         }
 
-        handleResponse(response, parseCompressFormat(outputFormat), outputCompression ?: 100)
+        handleResponse(response)
     }
 
     private fun executeAndParse(request: Request): GenerationResponse {
@@ -137,27 +116,18 @@ class ImageRepository(
 
     fun refreshGallery() = imageStorage.refreshList()
 
-    private suspend fun handleResponse(
-        response: GenerationResponse,
-        outputFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
-        outputCompression: Int = 100
-    ): GenerationResult {
+    private suspend fun handleResponse(response: GenerationResponse): GenerationResult {
         val data = response.data
         if (data.isEmpty()) {
             return GenerationResult(filePath = "", isSuccess = false, errorMessage = "No image data returned")
         }
 
         val item = data.first()
-        val extension = when (outputFormat) {
-            Bitmap.CompressFormat.JPEG -> "jpg"
-            Bitmap.CompressFormat.WEBP -> "webp"
-            else -> "png"
-        }
-        val outputFile = imageStorage.createOutputFile(extension)
+        val outputFile = imageStorage.createOutputFile()
 
         if (!item.b64Json.isNullOrBlank()) {
             val bitmap = BitmapUtils.decodeBase64ToBitmap(item.b64Json)
-            BitmapUtils.saveBitmapToFile(bitmap, outputFile, outputFormat, outputCompression)
+            BitmapUtils.saveBitmapToFile(bitmap, outputFile)
         } else if (!item.url.isNullOrBlank()) {
             return GenerationResult(filePath = "", isSuccess = false, errorMessage = "URL response not supported")
         } else {
@@ -191,17 +161,4 @@ class ImageRepository(
     }
 
     class ApiException(val code: Int, val errorBody: String) : Exception("HTTP $code: $errorBody")
-
-    private fun buildJsonObject(fields: Map<String, String?>): String {
-        val entries = fields.filterValues { it != null }.entries.joinToString(",") { (k, v) ->
-            "\"$k\":$v"
-        }
-        return "{$entries}"
-    }
-
-    private fun parseCompressFormat(format: String?): Bitmap.CompressFormat = when (format) {
-        "jpeg" -> Bitmap.CompressFormat.JPEG
-        "webp" -> Bitmap.CompressFormat.WEBP
-        else -> Bitmap.CompressFormat.PNG
-    }
 }

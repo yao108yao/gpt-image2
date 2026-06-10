@@ -8,9 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gptimage2.data.local.ApiKeyStore
 import com.example.gptimage2.di.AppModule
+import com.example.gptimage2.domain.model.ImageSize
 import com.example.gptimage2.domain.model.ApiProvider
-import com.example.gptimage2.domain.model.Quality
-import com.example.gptimage2.domain.model.OutputFormat
 import com.example.gptimage2.util.ApiErrorParser
 import com.example.gptimage2.util.BitmapUtils
 import kotlinx.coroutines.Dispatchers
@@ -29,8 +28,6 @@ data class MaskEditorUiState(
     val brushSize: Int = 30,
     val drawMode: DrawMode = DrawMode.PAINT,
     val prompt: String = "",
-    val quality: Quality = Quality.AUTO,
-    val outputFormat: OutputFormat = OutputFormat.PNG,
     val isLoading: Boolean = false,
     val resultImagePath: String? = null,
     val error: String? = null,
@@ -47,7 +44,6 @@ class MaskEditorViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     private var lastDrawPoint: android.graphics.PointF? = null
-    private var maskBeforeFullscreen: Bitmap? = null
 
     init {
         loadProviders()
@@ -71,27 +67,11 @@ class MaskEditorViewModel : ViewModel() {
     }
 
     fun enterFullscreen() {
-        _state.value.maskBitmap?.let { maskBeforeFullscreen = it.copy(it.config ?: Bitmap.Config.ARGB_8888, true) }
         _state.value = _state.value.copy(isFullscreen = true)
     }
 
     fun exitFullscreen() {
-        maskBeforeFullscreen = null
         _state.value = _state.value.copy(isFullscreen = false)
-    }
-
-    fun cancelFullscreen() {
-        val saved = maskBeforeFullscreen
-        if (saved != null) {
-            _state.value = _state.value.copy(
-                isFullscreen = false,
-                maskBitmap = saved,
-                maskVersion = _state.value.maskVersion + 1
-            )
-        } else {
-            _state.value = _state.value.copy(isFullscreen = false)
-        }
-        maskBeforeFullscreen = null
     }
 
     fun loadSourceImage(context: Context, uri: Uri) {
@@ -101,14 +81,7 @@ class MaskEditorViewModel : ViewModel() {
                 val rawBitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
 
-                val maxDim = 2048
-                val needScale = rawBitmap.width > maxDim || rawBitmap.height > maxDim
-                val scale = if (needScale) minOf(maxDim.toFloat() / rawBitmap.width, maxDim.toFloat() / rawBitmap.height) else 1f
-                val w = ((rawBitmap.width * scale).toInt() / 16) * 16
-                val h = ((rawBitmap.height * scale).toInt() / 16) * 16
-                val bitmap = if (w != rawBitmap.width || h != rawBitmap.height) {
-                    Bitmap.createScaledBitmap(rawBitmap, w, h, true).also { rawBitmap.recycle() }
-                } else rawBitmap
+                val bitmap = rawBitmap
 
                 val tempFile = File(context.cacheDir, "mask_source_${System.currentTimeMillis()}.png")
                 BitmapUtils.saveBitmapToFile(bitmap, tempFile)
@@ -162,19 +135,12 @@ class MaskEditorViewModel : ViewModel() {
         _state.value = _state.value.copy(prompt = prompt)
     }
 
-    fun onQualitySelected(quality: Quality) {
-        _state.value = _state.value.copy(quality = quality)
-    }
-
-    fun onOutputFormatSelected(format: OutputFormat) {
-        _state.value = _state.value.copy(outputFormat = format)
-    }
-
     fun generateInpainting() {
         val sourceFile = _state.value.sourceFile ?: return
         val maskBitmap = _state.value.maskBitmap ?: return
         if (_state.value.prompt.isBlank()) return
         val baseUrl = apiKeyStore.getBaseUrl()
+        android.util.Log.e("MaskEditor", "generateInpainting: sourceFile=${sourceFile?.name}, mask=${maskBitmap?.width}x${maskBitmap?.height}, prompt='${_state.value.prompt.take(50)}', baseUrl=$baseUrl")
         if (apiKeyStore.getApiKeyForProvider(baseUrl).isBlank()) {
             _state.value = _state.value.copy(error = "请先在设置中配置 API Key")
             return
@@ -187,20 +153,17 @@ class MaskEditorViewModel : ViewModel() {
                     _state.value.sourceFile!!.parent!!,
                     "mask_${System.currentTimeMillis()}.png"
                 )
-                val sourceBitmap = _state.value.sourceBitmap!!
                 val invertedMask = BitmapUtils.invertMaskForApi(maskBitmap)
                 BitmapUtils.saveBitmapToFile(invertedMask, actualMaskFile)
+                android.util.Log.d("MaskEditor", "mask saved: ${actualMaskFile.absolutePath}, size=${actualMaskFile.length()}bytes")
 
-                val qualityValue = _state.value.quality
-                val qualityParam = if (qualityValue == Quality.AUTO) null else qualityValue.apiValue
-                val outputFormat = _state.value.outputFormat
-                val formatParam = if (outputFormat == OutputFormat.PNG) null else outputFormat.apiValue
+                val sourceBitmap = _state.value.sourceBitmap!!
+                val autoSize = ImageSize.fromBitmap(sourceBitmap)
+                android.util.Log.d("MaskEditor", "source=${sourceBitmap.width}x${sourceBitmap.height}, sizeParam=${autoSize.apiValue}, paintedPx=${BitmapUtils.countPaintedPixels(maskBitmap)}/${maskBitmap.width * maskBitmap.height}")
 
                 val result = repository.imageToImage(
                     prompt = _state.value.prompt,
-                    size = null,
-                    quality = qualityParam,
-                    outputFormat = formatParam,
+                    size = autoSize.apiValue,
                     imageFiles = listOf(sourceFile),
                     maskFile = actualMaskFile
                 )

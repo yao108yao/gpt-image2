@@ -104,7 +104,7 @@ fun MaskEditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
-                            onClick = viewModel::cancelFullscreen,
+                            onClick = viewModel::exitFullscreen,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("取消")
@@ -181,8 +181,7 @@ fun MaskEditorScreen(
                         isPaintMode = state.drawMode == DrawMode.PAINT,
                         onDraw = { _, _ -> },
                         onDrawLine = { _, _, _, _ -> },
-                        modifier = Modifier.fillMaxWidth(),
-                        interactive = false
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     // Re-pick image button
@@ -217,16 +216,6 @@ fun MaskEditorScreen(
                         onPromptChange = viewModel::onPromptChange,
                         enabled = !state.isLoading,
                         maxLines = 2
-                    )
-
-                    QualitySelector(
-                        selectedQuality = state.quality,
-                        onQualitySelected = viewModel::onQualitySelected
-                    )
-
-                    OutputFormatSelector(
-                        selectedFormat = state.outputFormat,
-                        onFormatSelected = viewModel::onOutputFormatSelected
                     )
 
                     ProviderSelector(

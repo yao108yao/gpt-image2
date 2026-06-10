@@ -59,6 +59,7 @@ fun HomeScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -75,15 +76,22 @@ fun HomeScreen(
                 onSizeSelected = viewModel::onSizeSelected
             )
 
-            QualitySelector(
-                selectedQuality = state.quality,
-                onQualitySelected = viewModel::onQualitySelected
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QualitySelector(
+                    selectedQuality = state.quality,
+                    onQualitySelected = viewModel::onQualitySelected,
+                    modifier = Modifier.weight(1f)
+                )
 
-            OutputFormatSelector(
-                selectedFormat = state.outputFormat,
-                onFormatSelected = viewModel::onOutputFormatSelected
-            )
+                OutputFormatSelector(
+                    selectedFormat = state.outputFormat,
+                    onFormatSelected = viewModel::onOutputFormatSelected,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             ProviderSelector(
                 providers = state.providers,

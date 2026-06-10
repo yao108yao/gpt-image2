@@ -25,8 +25,7 @@ fun MaskCanvas(
     isPaintMode: Boolean,
     onDraw: (imageX: Float, imageY: Float) -> Unit,
     onDrawLine: (startX: Float, startY: Float, endX: Float, endY: Float) -> Unit,
-    modifier: Modifier = Modifier,
-    interactive: Boolean = true
+    modifier: Modifier = Modifier
 ) {
     if (sourceBitmap == null) return
 
@@ -45,11 +44,10 @@ fun MaskCanvas(
     ) {
         Canvas(
             modifier = Modifier
-                .fillMaxWidth()
                 .aspectRatio(imageAspect)
+                .fillMaxSize()
                 .align(Alignment.Center)
-                .then(
-                    if (interactive) Modifier.pointerInput(sourceBitmap, maskBitmap, brushSize, isPaintMode) {
+                .pointerInput(sourceBitmap, maskBitmap, brushSize, isPaintMode) {
                     val imageWidth = sourceBitmap.width.toFloat()
                     val imageHeight = sourceBitmap.height.toFloat()
 
@@ -79,8 +77,7 @@ fun MaskCanvas(
                         lastDrawPoint = null
                         pointerPosition = null
                     }
-                } else Modifier
-                )
+                }
         ) {
             val w = size.width.toInt()
             val h = size.height.toInt()

@@ -23,14 +23,9 @@ object BitmapUtils {
         return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
     }
 
-    fun saveBitmapToFile(
-        bitmap: Bitmap,
-        file: File,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
-        compression: Int = 100
-    ) {
+    fun saveBitmapToFile(bitmap: Bitmap, file: File) {
         FileOutputStream(file).use { fos ->
-            bitmap.compress(format, compression, fos)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
         }
     }
 
@@ -108,11 +103,19 @@ object BitmapUtils {
         val dstPixels = IntArray(w * h)
         mask.getPixels(srcPixels, 0, w, 0, 0, w, h)
         val black = android.graphics.Color.BLACK
+        var paintedPixels = 0
         for (i in srcPixels.indices) {
             val alpha = (srcPixels[i] ushr 24) and 0xFF
+            if (alpha > 0) paintedPixels++
             dstPixels[i] = if (alpha > 0) 0 else black
         }
         result.setPixels(dstPixels, 0, w, 0, 0, w, h)
         return result
+    }
+
+    fun countPaintedPixels(bitmap: Bitmap): Int {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return pixels.count { ((it ushr 24) and 0xFF) > 0 }
     }
 }
